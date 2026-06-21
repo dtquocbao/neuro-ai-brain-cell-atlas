@@ -18,109 +18,146 @@ cell × gene matrix → cell embeddings → cell type discovery → brain biolog
 - Which genes define cortex?
 - Which genes define cerebellum?
 
+**Active in notebook 01:** non-neuronal cell populations across the whole human brain (Allen WHB dataset).
+
 ## First Milestone
 
 Load a brain single-cell dataset and produce a UMAP colored by known or inferred cell types.
+
+**Status:** implemented in `notebooks/01_load_brain_data.ipynb` — load WHB non-neuron h5ad, subsample, cluster (Leiden), annotate glia, UMAP by cell type, marker genes, and GO/KEGG enrichment (GSEApy).
 
 ## Repository Structure
 
 ```
 neuro-ai-brain-cell-atlas/
 ├── README.md
-├── environment.yml
-├── requirements.txt              # Pip fallback (conda preferred)
+├── environment.yml                 # Conda env: neuro-ai-brain-cell-atlas
+├── requirements.txt                # Pip fallback
 ├── .gitignore
 ├── scripts/
 │   └── download_whb_data.py        # Download Allen WHB-10Xv3 h5ad + metadata
 ├── notebooks/
-│   └── 01_load_brain_data.ipynb    # Load and explore AnnData; first UMAP milestone
+│   └── 01_load_brain_data.ipynb    # WHB load → subset → UMAP → Leiden → markers → enrichment
 ├── reports/
-│   └── brain_cell_atlas_report.qmd # Quarto report (analysis write-up)
+│   └── brain_cell_atlas_report.qmd # Quarto report (placeholder)
 └── data/
-    ├── raw/                        # Raw input datasets (e.g. .h5ad)
-    └── processed/                  # Cleaned or intermediate AnnData outputs
+    ├── raw/                        # Optional local inputs (.gitkeep)
+    └── processed/
+        └── abc_atlas/              # Allen cache (metadata + h5ad; gitignored)
+            ├── metadata/WHB-10Xv3/
+            ├── metadata/WHB-taxonomy/
+            └── expression_matrices/WHB-10Xv3/
 ```
 
 | Path | Purpose |
 |------|---------|
 | `notebooks/` | Exploratory analysis and milestone notebooks |
+| `scripts/` | Data download utilities |
 | `reports/` | Rendered reports and research logs (Quarto) |
-| `data/raw/` | Raw datasets — not tracked in git if large |
-| `data/processed/` | Processed AnnData objects and derived tables |
+| `data/processed/abc_atlas/` | Allen Brain Cell Atlas cache (CSVs + h5ad) |
+| `data/raw/` | Optional raw inputs — not tracked in git |
+
+Large files (`*.h5ad`, `data/processed/*`) are gitignored; download locally with the script below.
 
 ## Tools
 
-- Python
-- [Scanpy](https://scanpy.readthedocs.io/) — single-cell analysis
-- [AnnData](https://anndata.readthedocs.io/) — annotated data matrices
-- [Squidpy](https://squidpy.readthedocs.io/) — spatial omics (planned)
-- scikit-learn
+| Package | Role |
+|---------|------|
+| [Scanpy](https://scanpy.readthedocs.io/) | Single-cell analysis (PCA, neighbors, UMAP, Leiden, markers) |
+| [AnnData](https://anndata.readthedocs.io/) | Annotated expression matrices |
+| `python-igraph`, `leidenalg` | Leiden clustering |
+| [GSEApy](https://gseapy.readthedocs.io/) | GO / KEGG enrichment via Enrichr |
+| [abc_atlas_access](https://alleninstitute.github.io/abc_atlas_access/) | Allen WHB data download |
+| scikit-learn | ML utilities (via Scanpy) |
+| [Squidpy](https://squidpy.readthedocs.io/) | Spatial omics (planned) |
 
 ## Getting Started
 
 ### 1. Environment (conda)
 
-Create and activate the conda environment from `environment.yml`:
+Create and activate the conda environment:
 
 ```bash
 conda env create -f environment.yml
 conda activate neuro-ai-brain-cell-atlas
 ```
 
-Register the kernel for Jupyter / VS Code (once per environment):
+Register the Jupyter kernel (once):
 
 ```bash
 python -m ipykernel install --user --name neuro-ai-brain-cell-atlas --display-name "neuro-ai-brain-cell-atlas"
 ```
 
-To update after dependency changes:
+Update after dependency changes:
 
 ```bash
 conda env update -f environment.yml --prune
 ```
 
-**Pip alternative:** `pip install -r requirements.txt` (see `requirements.txt` if you are not using conda).
+**Note:** If you created an earlier env named `brain-cell-atlas`, either activate that env or recreate from `environment.yml`. GSEApy is installed via **pip** inside the conda env (PyPI wheel; bioconda build is unreliable on Windows).
+
+**Pip alternative:** `pip install -r requirements.txt`
 
 ### 2. Data (Allen Whole Human Brain)
 
-This project uses the [Allen WHB-10X clustering dataset](https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-10X-clustering.html) (~3.4M nuclei, CC BY-NC 4.0).
+Dataset: [WHB-10X clustering](https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-10X-clustering.html) + [WHB-10Xv3 expression](https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-10Xv3.html) (~3.4M nuclei, CC BY-NC 4.0).
 
-The clustering page provides **metadata** (cell types, UMAP coordinates). **h5ad expression matrices** are downloaded separately from [WHB-10Xv3](https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-10Xv3.html) (~70 GB for all four files).
+| Component | Location after download |
+|-----------|-------------------------|
+| Clustering metadata | `data/processed/abc_atlas/metadata/WHB-10Xv3/` |
+| Cell-type taxonomy | `data/processed/abc_atlas/metadata/WHB-taxonomy/` |
+| h5ad matrices | `data/processed/abc_atlas/expression_matrices/WHB-10Xv3/<version>/` |
 
-List available files and sizes:
+List files and sizes:
 
 ```bash
 python scripts/download_whb_data.py --list
 ```
 
-Download clustering metadata + one log2 h5ad matrix into `data/processed/abc_atlas/`:
+Download metadata + one h5ad matrix (notebook uses non-neuron log2):
 
 ```bash
 python scripts/download_whb_data.py --metadata --matrix nonneurons-log2
 ```
 
-Other matrix options: `neurons-log2`, `neurons-raw`, `nonneurons-raw`, or `all` (full ~70 GB).
+Other matrix options: `neurons-log2`, `neurons-raw`, `nonneurons-raw`, or `all` (~70 GB total).
 
-After download, h5ad files appear under:
+Expected h5ad path used in the notebook:
 
 ```
-data/processed/abc_atlas/expression_matrices/WHB-10Xv3/<version>/
+data/processed/abc_atlas/expression_matrices/WHB-10Xv3/20240330/WHB-10Xv3-Nonneurons-log2.h5ad
 ```
 
-Load with Scanpy using backed mode for large files:
-
-```python
-import scanpy as sc
-adata = sc.read_h5ad("path/to/WHB-10Xv3-Nonneurons-log2.h5ad", backed="r")
-```
+(888,263 cells × 59,357 genes — use `backed="r"` if memory is tight.)
 
 ### 3. Run the notebook
 
-Open and run `notebooks/01_load_brain_data.ipynb` from the `notebooks/` directory (paths are relative to that folder).
+1. Open `notebooks/01_load_brain_data.ipynb`
+2. Select kernel **neuro-ai-brain-cell-atlas** (or your equivalent conda env)
+3. Run all cells
+
+**Notebook workflow:**
+
+1. Load `WHB-10Xv3-Nonneurons-log2.h5ad`
+2. Explore anatomical divisions (cortex, hippocampus, thalamus, …)
+3. Subsample to 50,000 cells for interactive analysis
+4. HVG selection → PCA → neighbors → UMAP
+5. Leiden clustering → manual glial annotations → UMAP by cell type
+6. Region × cell-type composition tables
+7. Marker genes (`rank_genes_groups`) → validation plots
+8. GO Biological Process / KEGG enrichment (`gseapy.enrichr`) — requires internet
 
 ## Current Status
 
-Early scaffold — notebook, data directories, report template, and `environment.yml` are in place. Reusable modules (`src/`) and the raw dataset are still to be added.
+| Item | Status |
+|------|--------|
+| Conda env + kernel | Done (`environment.yml`) |
+| WHB metadata + taxonomy | Downloaded under `data/processed/abc_atlas/` |
+| WHB non-neuron h5ad | Used in notebook (local; gitignored) |
+| Notebook 01 pipeline | Load → UMAP → Leiden → markers → enrichment |
+| Download script | `scripts/download_whb_data.py` |
+| Quarto report | Placeholder |
+| Reusable `src/` module | Not started |
 
 ## Planned Outputs
 
