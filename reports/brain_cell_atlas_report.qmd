@@ -1,0 +1,244 @@
+---
+title: "Forebrain-Enriched Astrocyte Subtype in the Human Brain Non-Neuronal Compartment"
+subtitle: "Conference Summary - Neuro-AI Brain Cell Atlas (Notebook 01)"
+author:
+  - "Neuro-AI Brain Cell Atlas Project"
+date: today
+date-format: "MMMM D, YYYY"
+keywords:
+  - single-cell RNA-seq
+  - astrocyte heterogeneity
+  - Allen Brain Cell Atlas
+  - neuroprotection
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 2
+    number-sections: false
+    code-fold: true
+    embed-resources: true
+  pdf:
+    documentclass: article
+    geometry:
+      - margin=1in
+    fontsize: 11pt
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+## Conference abstract
+
+**Background.** Astrocytes are heterogeneous across brain regions and perform distinct roles in synaptic support, ion homeostasis, and neurovascular coupling. Whether human non-neuronal single-cell atlases resolve forebrain-specialized astrocyte states remains an open question.
+
+**Methods.** We analyzed log~2~-normalized single-nucleus RNA-seq data from the Allen Institute Whole Human Brain (WHB) atlas (Siletti et al., *Nature* 2023; [WHB-10X clustering](https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-10X-clustering.html)). From 888,263 non-neuronal nuclei, we subsampled 50,000 cells, selected highly variable genes, and computed PCA, a neighbor graph, UMAP, and Leiden clustering (`resolution = 0.5`). Clusters were manually annotated using canonical markers. Differential expression, regional composition, and Gene Ontology enrichment (Enrichr) were performed for the **Astrocyte_2** population relative to canonical astrocytes.
+
+**Results.** Leiden clustering resolved 12 non-neuronal populations, including oligodendrocytes, microglia, endothelial cells, pericytes, and two astrocyte states. **Astrocyte_2** was transcriptionally distinct from **Astrocyte**, with top markers including *SLC1A2*, *SPARCL1*, *SLC4A4*, *AQP4*, *APOE*, and *CLU*. Within the Astrocyte_2 compartment, **51.5%** of cells mapped to cerebral cortex and **27.9%** to hippocampus, with negligible representation in brainstem and spinal cord. GO enrichment highlighted astrocyte differentiation, long-term synaptic potentiation, ion transport, neuron projection development, and regulation of amyloid-beta formation. A composite **Neuroprotective Support Score** (*APOE*, *CLU*, *GFAP*, *SLC1A2*, *AQP4*, *SPARCL1*, *SLC4A4*) placed **96.0%** of Astrocyte_2 cells in the highest quartile.
+
+**Conclusions.** Astrocyte_2 represents a forebrain-enriched, synaptic-support astrocyte program consistent with glutamate clearance, water/ion transport, and neurovascular homeostasis. These findings motivate follow-up analyses of region-specific astrocyte function and neurodegenerative disease relevance (Notebook 02).
+
+---
+
+## Significance
+
+::: {.callout-note}
+## Take-home message
+
+Non-neuronal scRNA-seq of the whole human brain resolves at least two astrocyte states. **Astrocyte_2** is concentrated in cortex and hippocampus and expresses a mature, neuroprotective-support transcriptional program—not a generic housekeeping glial signature.
+:::
+
+From a systems-neuroscience perspective, this pattern is biologically coherent: *SLC1A2* (EAAT2) mediates glutamate uptake at synapses; *AQP4* and *SLC4A4* support water and bicarbonate homeostasis at the glial limitans; *SPARCL1* (Hevin) participates in synapse formation and maturation; and *APOE*/*CLU* link glial biology to lipid handling and stress response pathways relevant to Alzheimer's disease genetics.
+
+---
+
+## Methods summary
+
+| Step | Detail |
+|------|--------|
+| **Dataset** | Allen WHB-10Xv3 non-neuron log2 h5ad (888,263 × 59,357) |
+| **Subset** | Random 50,000 nuclei for compute-efficient exploration |
+| **Preprocessing** | Highly variable genes → PCA (50 PCs) → neighbors → UMAP |
+| **Clustering** | Leiden (`resolution = 0.5`); 12 clusters |
+| **Annotation** | Manual mapping using marker genes and Allen metadata |
+| **DE testing** | `rank_genes_groups`: Astrocyte_2 vs Astrocyte |
+| **Enrichment** | GSEApy Enrichr - GO Biological Process 2023 |
+| **Scoring** | Scanpy `score_genes` - Neuroprotective Support gene set |
+| **Software** | Scanpy, AnnData, GSEApy; conda env `brain-cell-atlas` |
+| **Reproducibility** | `notebooks/01_load_brain_data.ipynb`; processed object saved to `data/processed/brain_non_neuronal_50k_annotated.h5ad` |
+
+---
+
+## Results
+
+### 1. Non-neuronal landscape
+
+Across 14 anatomical divisions represented in the subsample, expected major glial and vascular populations were recovered after Leiden clustering and manual curation:
+
+| Leiden | Annotated cell type |
+|--------|---------------------|
+| 0 | Activated Microglia |
+| 1 | Oligodendrocyte |
+| 2, 9 | Unknown |
+| 3 | Endothelial |
+| 4 | Astrocyte |
+| 5 | Pericyte |
+| **6** | **Astrocyte_2** |
+| 7 | Fibroblast |
+| 8 | Choroid Plexus |
+| 10 | Ependymal |
+| 11 | Border Macrophage |
+
+::: {.callout-tip}
+## Regional pattern (Research Question 1)
+
+Column-normalized region × cell-type tables revealed:
+
+- **Claustrum** enriched for Activated Microglia (~53%)
+- **Cerebral cortex** enriched for Astrocyte_2 (~24% of cortical non-neurons in subsample)
+- **Basal forebrain** enriched for Choroid Plexus (~25%)
+- **Myelencephalon** enriched for Oligodendrocytes (~21%)
+:::
+
+### 2. Astrocyte_2 is forebrain-localized
+
+Among **Astrocyte_2** cells, anatomical division composition was:
+
+| Anatomical division | Fraction of Astrocyte_2 |
+|---------------------|-------------------------|
+| Cerebral cortex | **51.5%** |
+| Hippocampus | **27.9%** |
+| Amygdaloid complex | 8.9% |
+| Basal nuclei | 3.8% |
+| Hypothalamus | 2.7% |
+| Midbrain / Pons / Brainstem / Spinal cord | **< 0.1% combined** |
+
+This spatial restriction supports a **forebrain synaptic-support specialization** rather than a pan-CNS astrocyte program.
+
+### 3. Marker genes distinguish Astrocyte_2 from Astrocyte
+
+Top differential genes (Astrocyte_2 vs Astrocyte reference):
+
+| Rank | Gene | Score | log~2~ FC |
+|------|------|-------|-----------|
+| 1 | *SLC1A2* | 81.7 | 19.7 |
+| 2 | *ADGRV1* | 81.6 | 19.5 |
+| 3 | *SPARCL1* | 79.0 | 15.3 |
+| 4 | *SLC4A4* | 78.7 | 17.1 |
+| 5 | *WIF1* | — | — |
+| 6 | *EPHA6* | — | — |
+
+Validation genes with higher expression in Astrocyte_2: *SLC1A2*, *AQP4*, *SPARCL1*, *SLC4A4*.
+
+**Biological reading:** Astrocyte_2 expresses a **mature, synapse-facing astrocyte module** - glutamate transport (*SLC1A2*), extracellular matrix/synapse organization (*SPARCL1*), and ion/water transport (*AQP4*, *SLC4A4*).
+
+### 4. Pathway enrichment supports synaptic and glial maturation programs
+
+Top GO Biological Process terms among Astrocyte_2 marker genes (Enrichr, adjusted *P* < 0.05):
+
+| Term | Adj. *P* | Lead genes |
+|------|----------|------------|
+| Regulation of astrocyte differentiation | 0.010 | *EPHA4*, *ID2*, *HES5* |
+| Regulation of long-term synaptic potentiation | 0.039 | — |
+| Regulation of amyloid-beta formation | 0.039 | *EPHA4*, *APOE*, *CLU* |
+| Negative regulation of long-term synaptic potentiation | 0.042 | *EPHA4*, *APOE* |
+| Positive regulation of neuron projection development | 0.054 | *NTRK3*, *APOE*, … |
+
+These pathways align with a glial state engaged in **circuit maintenance**, not merely structural support.
+
+### 5. Neuroprotective Support Score (Research Question 2)
+
+**Question:** Are Astrocyte_2 cells enriched for Alzheimer's disease–related / neuroprotective molecular programs?
+
+Gene set scored: *APOE*, *CLU*, *GFAP*, *SLC1A2*, *AQP4*, *SPARCL1*, *SLC4A4*.
+
+| Cell type | Q0 | Q1 | Q2 | Q3 (highest) |
+|-----------|----|----|----|----|
+| Astrocyte | 36.9% | 21.6% | 28.2% | 13.3% |
+| **Astrocyte_2** | 0.2% | 0.5% | 3.3% | **96.0%** |
+| Activated Microglia | 44.1% | 22.6% | 28.3% | 5.0% |
+
+::: {.callout-important}
+## Interpretation (professor's conclusion)
+
+Astrocyte_2 is **not** a generic astrocyte cluster. It is a **forebrain-enriched, neuroprotective-support astrocyte state** with convergent evidence from:
+
+1. Regional anatomy (cortex + hippocampus)
+2. Synaptic glutamate/ion transport markers
+3. GO terms for synaptic plasticity and amyloid-beta regulation
+4. Near-uniform occupancy of the top neuroprotective score quartile
+
+This is **hypothesis-generating**, not proof of causal neuroprotection. Subsampling, manual annotation, and absence of spatial validation are important caveats.
+:::
+
+---
+
+## Conclusions
+
+1. **Single-cell analysis of human non-neuronal nuclei resolves astrocyte heterogeneity.** At least two astrocyte states coexist in the WHB atlas subsample.
+
+2. **Astrocyte_2 maps to forebrain cognition circuits.** Strong enrichment in cerebral cortex and hippocampus, depletion in hindbrain/spinal cord.
+
+3. **Transcriptional identity matches synaptic-support astrocytes.** Elevated *SLC1A2*, *AQP4*, *SPARCL1*, *SLC4A4*, *APOE*, and *CLU*.
+
+4. **Pathway analysis links Astrocyte_2 to synaptic plasticity and amyloid-beta regulation.** Relevant to Alzheimer's disease biology, but requires orthogonal validation.
+
+5. **Next experiment (Notebook 02):** Subset hippocampal and cortical Astrocyte_2 cells; test whether neuroprotective gene programs covary with region, donor, or disease-associated gene modules; compare to Allen taxonomy labels in full metadata.
+
+---
+
+## Limitations
+
+- **Subsampling:** 50,000 of 888,263 non-neuronal nuclei, rare populations may be underrepresented.
+- **Manual cluster labels:** Leiden resolution and annotation subject to investigator bias; should be cross-validated against Allen WHB taxonomy (`WHB-taxonomy` metadata).
+- **Log~2~ matrix:** Analysis on normalized expression; raw-count DE methods not applied.
+- **No spatial context:** Regional labels are dissection-based, not in situ MERFISH validation.
+- **Exploratory enrichment:** Enrichr GO results require independent cohort replication.
+
+---
+
+## Future directions
+
+- Integrate Allen **cell_metadata** + **WHB-taxonomy** for reference-based annotation
+- Region-stratified re-clustering (hippocampus vs cortex astrocytes)
+- Neuron vs non-neuron comparative atlas (download `WHB-10Xv3-Neurons/log2`)
+- Spatial validation with Allen MERFISH resources
+- Export key figures from Notebook 01 to `reports/figures/` for poster submission
+
+---
+
+## Render this report
+
+From the project root (Quarto required: `conda install -c conda-forge quarto`):
+
+```bash
+quarto render reports/brain_cell_atlas_report.qmd
+```
+
+Output: `reports/brain_cell_atlas_report.html` (and PDF if LaTeX installed).
+
+---
+
+## References
+
+**Primary data**
+
+1. Siletti K, et al. Transcriptomic diversity of cell types across the adult human brain. *Nature*. 2023.
+2. Allen Institute for Brain Science. [WHB-10X clustering](https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-10X-clustering.html) and [WHB-10Xv3 expression](https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-10Xv3.html). *abc_atlas_access* documentation.
+
+**Software**
+
+3. Wolf FA, Angerer P, Theis FJ. SCANPY: large-scale single-cell gene expression data analysis. *Genome Biology*. 2018.
+4. Fang Z, et al. GSEApy: a comprehensive package for performing gene set enrichment analysis in Python. *Bioinformatics*. 2023.
+
+**Key genes (quick reference)**
+
+| Gene | Role |
+|------|------|
+| *SLC1A2* | Glutamate transporter EAAT2 - synaptic clearance |
+| *AQP4* | Aquaporin-4 - astrocytic water homeostasis, glymphatic interface |
+| *SPARCL1* | Synapse-organizing glycoprotein (Hevin) |
+| *SLC4A4* | Bicarbonate transporter - pH / ion homeostasis |
+| *APOE* | Lipid transport; major AD risk locus |
+| *CLU* | Clusterin; chaperone / stress response; AD-associated |

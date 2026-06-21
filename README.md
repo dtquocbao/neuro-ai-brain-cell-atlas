@@ -53,7 +53,7 @@ neuro-ai-brain-cell-atlas/
 |------|---------|
 | `notebooks/` | Exploratory analysis and milestone notebooks |
 | `scripts/` | Data download utilities |
-| `reports/` | Rendered reports and research logs (Quarto) |
+| `reports/` | Conference-style Quarto summary (`brain_cell_atlas_report.qmd`) |
 | `data/processed/abc_atlas/` | Allen Brain Cell Atlas cache (CSVs + h5ad) |
 | `data/raw/` | Optional raw inputs — not tracked in git |
 
@@ -147,6 +147,25 @@ data/processed/abc_atlas/expression_matrices/WHB-10Xv3/20240330/WHB-10Xv3-Nonneu
 7. Marker genes (`rank_genes_groups`) → validation plots
 8. GO Biological Process / KEGG enrichment (`gseapy.enrichr`) — requires internet
 
+### 4. Conference report
+
+Render the Notebook 01 conclusion as PDF or HTML:
+
+```bash
+# PDF (requires Quarto + LaTeX — TeX Live or TinyTeX)
+quarto render reports/brain_cell_atlas_report.qmd --to pdf
+
+# HTML alternative
+quarto render reports/brain_cell_atlas_report.qmd --to html
+```
+
+Output:
+
+- `reports/brain_cell_atlas_report.pdf`
+- `reports/brain_cell_atlas_report.html`
+
+On Windows, if `quarto` is not on PATH, use: `"C:\Program Files\Quarto\bin\quarto.exe" render reports/brain_cell_atlas_report.qmd --to pdf`
+
 ## Current Status
 
 | Item | Status |
@@ -156,7 +175,7 @@ data/processed/abc_atlas/expression_matrices/WHB-10Xv3/20240330/WHB-10Xv3-Nonneu
 | WHB non-neuron h5ad | Used in notebook (local; gitignored) |
 | Notebook 01 pipeline | Load → UMAP → Leiden → markers → enrichment |
 | Download script | `scripts/download_whb_data.py` |
-| Quarto report | Placeholder |
+| Quarto report | `reports/brain_cell_atlas_report.qmd` (conference summary) |
 | Reusable `src/` module | Not started |
 
 ## Planned Outputs
