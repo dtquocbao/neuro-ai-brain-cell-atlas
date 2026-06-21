@@ -1,5 +1,5 @@
 ---
-title: "Forebrain-Enriched Astrocyte Subtype in the Human Brain Non-Neuronal Compartment"
+title: "Identification of a Forebrain-Enriched Astrocyte Program in the Human Brain Non-Neuronal Atlas"
 subtitle: "Conference Summary - Neuro-AI Brain Cell Atlas (Notebook 01)"
 author:
   - "Neuro-AI Brain Cell Atlas Project"
@@ -35,7 +35,7 @@ execute:
 
 **Methods.** We analyzed log~2~-normalized single-nucleus RNA-seq data from the Allen Institute Whole Human Brain (WHB) atlas (Siletti et al., *Nature* 2023; [WHB-10X clustering](https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-10X-clustering.html)). From 888,263 non-neuronal nuclei, we subsampled 50,000 cells, selected highly variable genes, and computed PCA, a neighbor graph, UMAP, and Leiden clustering (`resolution = 0.5`). Clusters were manually annotated using canonical markers. Differential expression, regional composition, and Gene Ontology enrichment (Enrichr) were performed for the **Astrocyte_2** population relative to canonical astrocytes.
 
-**Results.** Leiden clustering resolved 12 non-neuronal populations, including oligodendrocytes, microglia, endothelial cells, pericytes, and two astrocyte states. **Astrocyte_2** was transcriptionally distinct from **Astrocyte**, with top markers including *SLC1A2*, *SPARCL1*, *SLC4A4*, *AQP4*, *APOE*, and *CLU*. Within the Astrocyte_2 compartment, **51.5%** of cells mapped to cerebral cortex and **27.9%** to hippocampus, with negligible representation in brainstem and spinal cord. GO enrichment highlighted astrocyte differentiation, long-term synaptic potentiation, ion transport, neuron projection development, and regulation of amyloid-beta formation. A composite **Neuroprotective Support Score** (*APOE*, *CLU*, *GFAP*, *SLC1A2*, *AQP4*, *SPARCL1*, *SLC4A4*) placed **96.0%** of Astrocyte_2 cells in the highest quartile.
+**Results.** Leiden clustering resolved 12 non-neuronal populations, including oligodendrocytes, microglia, endothelial cells, pericytes, and two astrocyte states. **Astrocyte_2** was transcriptionally distinct from **Astrocyte**, with top markers including *SLC1A2*, *SPARCL1*, *SLC4A4*, *AQP4*, *APOE*, and *CLU*. Within the Astrocyte_2 compartment, **51.5%** of cells mapped to cerebral cortex and **27.9%** to hippocampus, with negligible representation in brainstem and spinal cord. GO enrichment highlighted astrocyte differentiation, long-term synaptic potentiation, ion transport, neuron projection development, and regulation of amyloid-beta formation. A composite **Astrocyte Support Signature Score** (*APOE*, *CLU*, *GFAP*, *SLC1A2*, *AQP4*, *SPARCL1*, *SLC4A4*) placed **96.0%** of Astrocyte_2 cells in the highest quartile.
 
 **Conclusions.** Astrocyte_2 represents a forebrain-enriched, synaptic-support astrocyte program consistent with glutamate clearance, water/ion transport, and neurovascular homeostasis. These findings motivate follow-up analyses of region-specific astrocyte function and neurodegenerative disease relevance (Notebook 02).
 
@@ -64,7 +64,7 @@ From a systems-neuroscience perspective, this pattern is biologically coherent: 
 | **Annotation** | Manual mapping using marker genes and Allen metadata |
 | **DE testing** | `rank_genes_groups`: Astrocyte_2 vs Astrocyte |
 | **Enrichment** | GSEApy Enrichr - GO Biological Process 2023 |
-| **Scoring** | Scanpy `score_genes` - Neuroprotective Support gene set |
+| **Scoring** | Scanpy `score_genes` - Astrocyte Support gene set |
 | **Software** | Scanpy, AnnData, GSEApy; conda env `brain-cell-atlas` |
 | **Reproducibility** | `notebooks/01_load_brain_data.ipynb`; processed object saved to `data/processed/brain_non_neuronal_50k_annotated.h5ad` |
 
@@ -147,9 +147,11 @@ Top GO Biological Process terms among Astrocyte_2 marker genes (Enrichr, adjuste
 
 These pathways align with a glial state engaged in **circuit maintenance**, not merely structural support.
 
-### 5. Neuroprotective Support Score (Research Question 2)
+### 5. Astrocyte Support Signature Score (Research Question 2)
 
 **Question:** Are Astrocyte_2 cells enriched for Alzheimer's disease–related / neuroprotective molecular programs?
+
+Because several genes in the scoring panel overlap with the marker genes used to characterize Astrocyte_2, this score should be interpreted as a descriptive summary of the identified transcriptional program rather than an independent validation.
 
 Gene set scored: *APOE*, *CLU*, *GFAP*, *SLC1A2*, *AQP4*, *SPARCL1*, *SLC4A4*.
 
