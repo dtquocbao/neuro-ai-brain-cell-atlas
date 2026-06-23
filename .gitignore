@@ -35,4 +35,5 @@ reports/*.pdf
 
 # Scanpy / analysis artifacts
 figures/
+models/
 *.h5ad

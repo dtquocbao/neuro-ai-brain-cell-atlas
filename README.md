@@ -1,23 +1,26 @@
 # Neuro-AI Brain Cell Atlas
 
-Single-cell brain atlas workflow for identifying major brain cell types from gene expression and interpreting their biological identity with a focus on **forebrain-enriched astrocyte heterogeneity** and **Alzheimer's disease–associated gene programs**.
+Single-cell brain atlas workflow for identifying major brain cell types from gene expression and interpreting their biological identity — with a focus on **forebrain-enriched astrocyte heterogeneity**, **Alzheimer's disease–associated gene programs**, and **donor-aware cell-state prediction**.
 
 **Start date:** 06/20/2026
 
 ## Goal
 
-Build a reproducible analysis pipeline that goes from raw single-cell RNA-seq data to cell-type discovery and brain biology interpretation:
+Build a reproducible analysis pipeline that goes from raw single-cell RNA-seq data to cell-type discovery, astrocyte subtype characterization, and predictive modeling:
 
 ```
-cell × gene matrix → cell embeddings → cell type discovery → astrocyte subtype characterization → AD gene program analysis
+cell × gene matrix → cell embeddings → cell type discovery → astrocyte subtype characterization
+  → AD gene program analysis → scVI + ML classification → WHB taxonomy + donor metadata
 ```
 
 ## Research Questions
 
 - Which genes define hippocampus, cortex, and cerebellum?
 - Does the Allen WHB atlas resolve distinct astrocyte subtypes beyond canonical astrocytes?
-- Is **Astrocyte_2** - a cortex/hippocampus-enriched population — enriched for neuroprotective and AD-associated transcriptional programs?
+- Is **Astrocyte_2** — a cortex/hippocampus-enriched population — enriched for neuroprotective and AD-associated transcriptional programs?
 - Do regional and donor-level patterns in AD support scores replicate across the atlas, or reflect batch artifacts?
+- Can a **donor-aware scVI + MLP classifier** predict Astrocyte_2 identity on held-out donors, and which latent dimensions drive the prediction?
+- Does official Allen WHB taxonomy confirm Astrocyte_2 as a genuine astrocyte state, and how does AD score vary with donor age/sex?
 
 ## Analysis Pipeline
 
@@ -26,14 +29,25 @@ cell × gene matrix → cell embeddings → cell type discovery → astrocyte su
 | **01** | `01_load_brain_data.ipynb` | Load WHB non-neuron h5ad → subsample 50k → Leiden → annotate glia → discover **Astrocyte_2** → GO/KEGG enrichment → save processed object |
 | **02** | `02_neuroprotective_astrocytes.ipynb` | Neuroprotective Support Score → quartile enrichment → regional mapping → DE (Astrocyte_2 vs Astrocyte) → Mann–Whitney |
 | **03** | `03_AD_risk_gene_enrichment_in_Astrocyte_2.ipynb` | AD support score (6-gene panel) → quartile + Mann–Whitney → regional and **donor** stratification → donor × region heatmap |
+| **04** | `04_cell_state_prediction_in_human_astrocytes.ipynb` | Donor-aware train/val/test split → **scVI** latent embedding → **MLP** 3-class classifier → SHAP on latent dims → gene correlation |
+| **05** | `05_whb_taxonomy_and_donor_stratification.ipynb` | Join Allen donor metadata (age, sex) → map **Astrocyte_2** to official WHB taxonomy → AD score vs age/sex → pseudo-spatial x/y plots |
 
-**Shared input for notebooks 02–03:**
+**Shared input for notebooks 02–05:**
 
 ```
 data/processed/brain_non_neuronal_50k_annotated_umap.h5ad
 ```
 
-(50,000 nuclei × 3,000 HVGs - produced by notebook 01; gitignored locally.)
+(50,000 nuclei × 3,000 HVGs — produced by notebook 01; gitignored locally.)
+
+**Additional metadata for notebook 05** (from `abc_atlas_access` cache):
+
+```
+data/processed/abc_atlas/metadata/WHB-10Xv3/<version>/donor.csv
+data/processed/abc_atlas/metadata/WHB-10Xv3/<version>/cell_metadata.csv
+data/processed/abc_atlas/metadata/WHB-taxonomy/<version>/cluster.csv
+data/processed/abc_atlas/metadata/WHB-taxonomy/<version>/cluster_annotation_term.csv
+```
 
 ## Repository Structure
 
@@ -46,16 +60,20 @@ neuro-ai-brain-cell-atlas/
 ├── scripts/
 │   └── download_whb_data.py        # Download Allen WHB-10Xv3 h5ad + metadata
 ├── notebooks/
-│   ├── 01_load_brain_data.ipynb                        # WHB load → UMAP → Leiden → Astrocyte_2 discovery
-│   ├── 02_neuroprotective_astrocytes.ipynb             # Neuroprotective score + regional DE
-│   └── 03_AD_risk_gene_enrichment_in_Astrocyte_2.ipynb  # AD gene score + donor/region stratification
+│   ├── 01_load_brain_data.ipynb
+│   ├── 02_neuroprotective_astrocytes.ipynb
+│   ├── 03_AD_risk_gene_enrichment_in_Astrocyte_2.ipynb
+│   ├── 04_cell_state_prediction_in_human_astrocytes.ipynb
+│   └── 05_whb_taxonomy_and_donor_stratification.ipynb
 ├── reports/
 │   ├── brain_cell_atlas_report.qmd           # Conference summary — Notebook 01
 │   └── neuroprotective_astrocytes_report.qmd # Conference summary — Notebook 02
 ├── results/
-│   └── astrocyte2_vs_astrocyte_markers.csv   # DE table from Notebook 02
+│   └── astrocyte2_vs_astrocyte_markers.csv  # DE table from Notebook 02
+├── models/                                   # scVI checkpoints (local; gitignored)
+│   └── scvi_nb04/
 └── data/
-    ├── raw/                        # Optional local inputs (.gitkeep)
+    ├── raw/
     └── processed/
         └── abc_atlas/              # Allen cache (metadata + h5ad; gitignored)
             ├── metadata/WHB-10Xv3/
@@ -65,14 +83,15 @@ neuro-ai-brain-cell-atlas/
 
 | Path | Purpose |
 |------|---------|
-| `notebooks/` | Exploratory analysis — run in order (01 → 02 → 03) |
+| `notebooks/` | Exploratory analysis — run in order (01 → 05) |
 | `scripts/` | Data download utilities |
 | `reports/` | Conference-style Quarto summaries (`.qmd`; PDF/HTML rendered locally) |
 | `results/` | Exported tables and analysis outputs |
+| `models/` | Trained model checkpoints (e.g. scVI from NB04) |
 | `data/processed/abc_atlas/` | Allen Brain Cell Atlas cache (CSVs + h5ad) |
 | `data/raw/` | Optional raw inputs — not tracked in git |
 
-Large files (`*.h5ad`, `data/processed/*`) and rendered reports (`reports/*.pdf`, `reports/*.html`) are gitignored; download or render locally.
+Large files (`*.h5ad`, `data/processed/*`, `models/`) and rendered reports (`reports/*.pdf`, `reports/*.html`) are gitignored; download or render locally.
 
 ## Tools
 
@@ -80,10 +99,12 @@ Large files (`*.h5ad`, `data/processed/*`) and rendered reports (`reports/*.pdf`
 |---------|------|
 | [Scanpy](https://scanpy.readthedocs.io/) | Single-cell analysis (PCA, neighbors, UMAP, Leiden, markers, `score_genes`) |
 | [AnnData](https://anndata.readthedocs.io/) | Annotated expression matrices |
+| [scvi-tools](https://docs.scvi-tools.org/) | Variational autoencoder latent embeddings (Notebook 04) |
+| [SHAP](https://shap.readthedocs.io/) | Latent-dimension interpretability (Notebook 04) |
 | `python-igraph`, `leidenalg` | Leiden clustering |
 | [GSEApy](https://gseapy.readthedocs.io/) | GO / KEGG enrichment via Enrichr |
-| [abc_atlas_access](https://alleninstitute.github.io/abc_atlas_access/) | Allen WHB data download |
-| scikit-learn | ML utilities (via Scanpy) |
+| [abc_atlas_access](https://alleninstitute.github.io/abc_atlas_access/) | Allen WHB data download + metadata (Notebooks 04–05) |
+| scikit-learn | MLP classifier, train/test splits, metrics |
 | [Squidpy](https://squidpy.readthedocs.io/) | Spatial omics (planned) |
 
 ## Getting Started
@@ -109,7 +130,15 @@ Update after dependency changes:
 conda env update -f environment.yml --prune
 ```
 
-**Note:** If you created an earlier env named `brain-cell-atlas`, either activate that env or recreate from `environment.yml`. GSEApy is installed via **pip** inside the conda env (PyPI wheel; bioconda build is unreliable on Windows).
+**Notes:**
+
+- If you use an older env named `brain-cell-atlas`, install missing packages manually or recreate from `environment.yml`.
+- **GSEApy** and **abc_atlas_access** are installed via **pip** inside the conda env (PyPI / GitHub; bioconda builds unreliable on Windows).
+- **abc_atlas_access** must be installed from GitHub (import name uses underscores):
+
+```bash
+pip install "git+https://github.com/AllenInstitute/abc_atlas_access.git"
+```
 
 **Pip alternative:** `pip install -r requirements.txt`
 
@@ -143,13 +172,13 @@ Expected h5ad path used in notebook 01:
 data/processed/abc_atlas/expression_matrices/WHB-10Xv3/20240330/WHB-10Xv3-Nonneurons-log2.h5ad
 ```
 
-(888,263 cells × 59,357 genes - use `backed="r"` if memory is tight.)
+(888,263 cells × 59,357 genes — use `backed="r"` if memory is tight.)
 
 ### 3. Run the notebooks
 
 Select kernel **neuro-ai-brain-cell-atlas** (or your equivalent conda env) for all notebooks.
 
-#### Notebook 01 - `01_load_brain_data.ipynb`
+#### Notebook 01 — `01_load_brain_data.ipynb`
 
 1. Load `WHB-10Xv3-Nonneurons-log2.h5ad`
 2. Explore anatomical divisions (cortex, hippocampus, thalamus, …)
@@ -161,7 +190,7 @@ Select kernel **neuro-ai-brain-cell-atlas** (or your equivalent conda env) for a
 8. GO Biological Process / KEGG enrichment (`gseapy.enrichr`) — requires internet
 9. Save `data/processed/brain_non_neuronal_50k_annotated_umap.h5ad`
 
-#### Notebook 02 - `02_neuroprotective_astrocytes.ipynb`
+#### Notebook 02 — `02_neuroprotective_astrocytes.ipynb`
 
 Requires processed h5ad from notebook 01.
 
@@ -172,16 +201,39 @@ Requires processed h5ad from notebook 01.
 5. Mann–Whitney U test on score separation
 6. Export markers → `results/astrocyte2_vs_astrocyte_markers.csv`
 
-#### Notebook 03 - `03_AD_risk_gene_enrichment_in_Astrocyte_2.ipynb`
+#### Notebook 03 — `03_AD_risk_gene_enrichment_in_Astrocyte_2.ipynb`
 
-Requires processed h5ad from notebook 01 (scores from NB02 may already be in `adata.obs`).
+Requires processed h5ad from notebook 01.
 
 1. Compute **AD support score** (*APOE*, *CLU*, *CST3*, *AQP4*, *SLC1A2*, *SPARCL1*)
 2. Quartile enrichment and Mann–Whitney vs canonical astrocytes
 3. Regional stratification within Astrocyte_2
 4. Donor stratification via `library_label` (368 donors)
-5. Donor × region heatmap: test for batch vs biology
+5. Donor × region heatmap — test for batch vs biology
 6. Correlation with Neuroprotective Support Score
+
+#### Notebook 04 — `04_cell_state_prediction_in_human_astrocytes.ipynb`
+
+Requires processed h5ad from notebook 01. Needs **scvi-tools** and **shap**.
+
+1. Define 3-class target: Astrocyte_2 / Astrocyte / Other
+2. **Donor-aware** train/validation/test split (by `library_label`)
+3. Train **scVI** on astrocyte subset → 20-dim latent embedding
+4. Train **MLP classifier** (64→32) on latent space
+5. Evaluate on held-out test donors (AUROC, confusion matrix)
+6. **SHAP** on latent dims → correlate top dims with genes (*SLC1A2*, *SPARCL1*, …)
+7. Save scVI model → `models/scvi_nb04/`
+
+#### Notebook 05 — `05_whb_taxonomy_and_donor_stratification.ipynb`
+
+Requires processed h5ad + Allen metadata CSVs (`donor.csv`, `cell_metadata.csv`, WHB taxonomy files). Needs **abc_atlas_access** metadata cache.
+
+1. Join donor metadata (age, sex) onto `adata.obs` via `library_label`
+2. Map cells to official WHB taxonomy (`whb_subcluster`, `whb_supercluster`) via `cluster_alias`
+3. Confirm Astrocyte_2 maps to official **Astrocyte** supercluster
+4. AD support score vs donor age and sex (with pseudoreplication caveats)
+5. Pseudo-spatial plots using x/y coordinates from Allen cell metadata
+6. WHB taxonomy heatmap (cell type × supercluster)
 
 ### 4. Conference reports
 
@@ -213,12 +265,14 @@ On Windows, if `quarto` is not on PATH:
 
 | Item | Status |
 |------|--------|
-| Conda env + kernel | Done (`environment.yml`) |
+| Conda env + kernel | Done (`environment.yml`; includes scvi-tools, shap) |
 | WHB metadata + taxonomy | Downloaded under `data/processed/abc_atlas/` |
 | WHB non-neuron h5ad | Used in notebook 01 (local; gitignored) |
 | Notebook 01 | Load → UMAP → Leiden → Astrocyte_2 discovery → enrichment → save h5ad |
 | Notebook 02 | Neuroprotective score, regional DE, Mann–Whitney; markers exported |
 | Notebook 03 | AD support score; regional + donor stratification |
+| Notebook 04 | Donor-aware scVI + MLP classifier; SHAP interpretability; model saved |
+| Notebook 05 | WHB taxonomy mapping; donor age/sex join; pseudo-spatial plots |
 | Download script | `scripts/download_whb_data.py` |
 | Quarto reports | NB01 + NB02 conference summaries (`.qmd`) |
 | Results export | `results/astrocyte2_vs_astrocyte_markers.csv` |
@@ -230,11 +284,14 @@ On Windows, if `quarto` is not on PATH:
 - Top markers include *SLC1A2*, *SPARCL1*, *SLC4A4*, *AQP4*, *APOE*, and *CLU* — consistent with synaptic-support astrocyte biology.
 - **Neuroprotective Support Score:** ~99.9% of Astrocyte_2 nuclei in Q4 vs ~2.9% of canonical astrocytes (NB02).
 - **AD support score:** ~96% of Astrocyte_2 in Q4; regional gradient (cortex/hippocampus > hypothalamus) replicates across donors (NB03).
+- **ML classifier (NB04):** Donor-held-out MLP on scVI latent space achieves macro AUROC ≈ 0.999; SHAP top latent dims correlate with *SLC1A2*, *SPARCL1*, *SLC4A4* — independently rediscovering NB01–02 marker genes.
+- **Official taxonomy (NB05):** Astrocyte_2 and canonical Astrocyte both map to Allen **Astrocyte** supercluster (~40% subcluster coverage in 50k subsample); subsample spans only **4 donors** (ages 28–60) — age/sex effects are underpowered at donor level.
 
 ## Planned Next Steps
 
-- Link Allen WHB donor metadata (age, sex) for covariate-adjusted stratification
-- Cross-reference Astrocyte_2 to official WHB taxonomy labels
+- Quarto conference reports for Notebooks 03–05
+- Donor-level mixed models on full WHB atlas (n ≥ 20 donors) for valid age/sex inference
+- MapMyCells formal reference mapping for Astrocyte_2 validation
 - Integrate external AD snRNA-seq cohort (e.g., SEA-AD) for disease comparison
-- Quarto report for Notebook 03
+- MERFISH / spatial validation of cortex/hippocampus Astrocyte_2 enrichment
 - Blog post, poster, whitepaper, conference submission
