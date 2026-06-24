@@ -1,16 +1,17 @@
 # Neuro-AI Brain Cell Atlas
 
-Single-cell brain atlas workflow for identifying major brain cell types from gene expression and interpreting their biological identity — with a focus on **forebrain-enriched astrocyte heterogeneity**, **Alzheimer's disease–associated gene programs**, and **donor-aware cell-state prediction**.
+Single-cell brain atlas workflow for identifying major brain cell types from gene expression and interpreting their biological identity — with a focus on **forebrain-enriched astrocyte heterogeneity**, **Alzheimer's disease–associated gene programs**, **donor-aware cell-state prediction**, and **SEA-AD disease comparison**.
 
 **Start date:** 06/20/2026
 
 ## Goal
 
-Build a reproducible analysis pipeline that goes from raw single-cell RNA-seq data to cell-type discovery, astrocyte subtype characterization, and predictive modeling:
+Build a reproducible analysis pipeline that goes from raw single-cell RNA-seq data to cell-type discovery, astrocyte subtype characterization, predictive modeling, and disease-cohort validation:
 
 ```
 cell × gene matrix → cell embeddings → cell type discovery → astrocyte subtype characterization
   → AD gene program analysis → scVI + ML classification → WHB taxonomy + donor metadata
+  → SEA-AD disease comparison (normal vs dementia)
 ```
 
 ## Research Questions
@@ -21,6 +22,7 @@ cell × gene matrix → cell embeddings → cell type discovery → astrocyte su
 - Do regional and donor-level patterns in AD support scores replicate across the atlas, or reflect batch artifacts?
 - Can a **donor-aware scVI + MLP classifier** predict Astrocyte_2 identity on held-out donors, and which latent dimensions drive the prediction?
 - Does official Allen WHB taxonomy confirm Astrocyte_2 as a genuine astrocyte state, and how does AD score vary with donor age/sex?
+- Does the WHB neuroprotective astrocyte program **decline in SEA-AD** astrocytes with dementia, Braak stage, ADNC, and APOE4 status?
 
 ## Analysis Pipeline
 
@@ -31,6 +33,7 @@ cell × gene matrix → cell embeddings → cell type discovery → astrocyte su
 | **03** | `03_AD_risk_gene_enrichment_in_Astrocyte_2.ipynb` | AD support score (6-gene panel) → quartile + Mann–Whitney → regional and **donor** stratification → donor × region heatmap |
 | **04** | `04_cell_state_prediction_in_human_astrocytes.ipynb` | Donor-aware train/val/test split → **scVI** latent embedding → **MLP** 3-class classifier → SHAP on latent dims → gene correlation |
 | **05** | `05_whb_taxonomy_and_donor_stratification.ipynb` | Join Allen donor metadata (age, sex) → map **Astrocyte_2** to official WHB taxonomy → AD score vs age/sex → pseudo-spatial x/y plots |
+| **06** | `06_seaad_disease_comparison.ipynb` | SEA-AD MTG astrocytes → AD support score → normal vs dementia → Braak / ADNC / APOE4 → pseudo-progression → Astrocyte_2-like fraction |
 
 **Shared input for notebooks 02–05:**
 
@@ -39,6 +42,14 @@ data/processed/brain_non_neuronal_50k_annotated_umap.h5ad
 ```
 
 (50,000 nuclei × 3,000 HVGs — produced by notebook 01; gitignored locally.)
+
+**Input for notebook 06** (SEA-AD MTG; gitignored locally):
+
+```
+data/processed/<SEAAD_MTG>.h5ad
+```
+
+Full SEA-AD MTG release: ~1.38M nuclei × 35,483 genes (use `backed="r"`). Notebook subsets to **Astrocyte** subclass (~70k nuclei, 84 donors). Download via [CELLxGENE](https://cellxgene.cziscience.com/) or Allen S3 — see `scripts/download_sea_ad_mtg.py` for available URLs.
 
 **Additional metadata for notebook 05** (from `abc_atlas_access` cache):
 
@@ -58,13 +69,15 @@ neuro-ai-brain-cell-atlas/
 ├── requirements.txt                # Pip fallback
 ├── .gitignore
 ├── scripts/
-│   └── download_whb_data.py        # Download Allen WHB-10Xv3 h5ad + metadata
+│   ├── download_whb_data.py        # Download Allen WHB-10Xv3 h5ad + metadata
+│   └── download_sea_ad_mtg.py      # List available SEA-AD MTG S3 download URLs
 ├── notebooks/
 │   ├── 01_load_brain_data.ipynb
 │   ├── 02_neuroprotective_astrocytes.ipynb
 │   ├── 03_AD_risk_gene_enrichment_in_Astrocyte_2.ipynb
 │   ├── 04_cell_state_prediction_in_human_astrocytes.ipynb
-│   └── 05_whb_taxonomy_and_donor_stratification.ipynb
+│   ├── 05_whb_taxonomy_and_donor_stratification.ipynb
+│   └── 06_seaad_disease_comparison.ipynb
 ├── reports/
 │   ├── brain_cell_atlas_report.qmd           # Conference summary — Notebook 01
 │   └── neuroprotective_astrocytes_report.qmd # Conference summary — Notebook 02
@@ -75,20 +88,22 @@ neuro-ai-brain-cell-atlas/
 └── data/
     ├── raw/
     └── processed/
-        └── abc_atlas/              # Allen cache (metadata + h5ad; gitignored)
-            ├── metadata/WHB-10Xv3/
-            ├── metadata/WHB-taxonomy/
-            └── expression_matrices/WHB-10Xv3/
+        ├── abc_atlas/              # Allen WHB cache (metadata + h5ad; gitignored)
+        │   ├── metadata/WHB-10Xv3/
+        │   ├── metadata/WHB-taxonomy/
+        │   └── expression_matrices/WHB-10Xv3/
+        └── <SEAAD_MTG>.h5ad        # SEA-AD MTG (gitignored; ~6–70 GB depending on release)
 ```
 
 | Path | Purpose |
 |------|---------|
-| `notebooks/` | Exploratory analysis — run in order (01 → 05) |
-| `scripts/` | Data download utilities |
+| `notebooks/` | Exploratory analysis — run in order (01 → 06) |
+| `scripts/` | Data download utilities (WHB + SEA-AD URL discovery) |
 | `reports/` | Conference-style Quarto summaries (`.qmd`; PDF/HTML rendered locally) |
 | `results/` | Exported tables and analysis outputs |
 | `models/` | Trained model checkpoints (e.g. scVI from NB04) |
 | `data/processed/abc_atlas/` | Allen Brain Cell Atlas cache (CSVs + h5ad) |
+| `data/processed/*.h5ad` | WHB subsample + SEA-AD MTG (local only) |
 | `data/raw/` | Optional raw inputs — not tracked in git |
 
 Large files (`*.h5ad`, `data/processed/*`, `models/`) and rendered reports (`reports/*.pdf`, `reports/*.html`) are gitignored; download or render locally.
@@ -142,7 +157,9 @@ pip install "git+https://github.com/AllenInstitute/abc_atlas_access.git"
 
 **Pip alternative:** `pip install -r requirements.txt`
 
-### 2. Data (Allen Whole Human Brain)
+### 2. Data
+
+#### Allen Whole Human Brain (Notebooks 01–05)
 
 Dataset: [WHB-10X clustering](https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-10X-clustering.html) + [WHB-10Xv3 expression](https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-10Xv3.html) (~3.4M nuclei, CC BY-NC 4.0).
 
@@ -152,27 +169,28 @@ Dataset: [WHB-10X clustering](https://alleninstitute.github.io/abc_atlas_access/
 | Cell-type taxonomy | `data/processed/abc_atlas/metadata/WHB-taxonomy/` |
 | h5ad matrices | `data/processed/abc_atlas/expression_matrices/WHB-10Xv3/<version>/` |
 
-List files and sizes:
-
 ```bash
 python scripts/download_whb_data.py --list
-```
-
-Download metadata + one h5ad matrix (notebook 01 uses non-neuron log2):
-
-```bash
 python scripts/download_whb_data.py --metadata --matrix nonneurons-log2
 ```
 
-Other matrix options: `neurons-log2`, `neurons-raw`, `nonneurons-raw`, or `all` (~70 GB total).
-
-Expected h5ad path used in notebook 01:
+Expected h5ad for notebook 01:
 
 ```
 data/processed/abc_atlas/expression_matrices/WHB-10Xv3/20240330/WHB-10Xv3-Nonneurons-log2.h5ad
 ```
 
-(888,263 cells × 59,357 genes — use `backed="r"` if memory is tight.)
+#### SEA-AD MTG (Notebook 06)
+
+Dataset: [Seattle Alzheimer's Disease Brain Cell Atlas](https://portal.brain-map.org/explore/seattle-alzheimers-disease) — Gabitto et al., *Nature Neuroscience* 2024. MTG snRNA-seq with clinical metadata (ADNC, Braak stage, APOE4, cognitive status).
+
+List available Allen S3 URLs and file sizes:
+
+```bash
+python scripts/download_sea_ad_mtg.py
+```
+
+Recommended: download the full MTG h5ad via [CELLxGENE](https://cellxgene.cziscience.com/) (search “SEA-AD MTG”) or stream from S3 using `requests` (avoid `urllib` on Windows — SSL cert store issues). Place the file under `data/processed/` and update the path in notebook 06.
 
 ### 3. Run the notebooks
 
@@ -226,7 +244,7 @@ Requires processed h5ad from notebook 01. Needs **scvi-tools** and **shap**.
 
 #### Notebook 05 — `05_whb_taxonomy_and_donor_stratification.ipynb`
 
-Requires processed h5ad + Allen metadata CSVs (`donor.csv`, `cell_metadata.csv`, WHB taxonomy files). Needs **abc_atlas_access** metadata cache.
+Requires processed h5ad + Allen metadata CSVs. Needs **abc_atlas_access** metadata cache.
 
 1. Join donor metadata (age, sex) onto `adata.obs` via `library_label`
 2. Map cells to official WHB taxonomy (`whb_subcluster`, `whb_supercluster`) via `cluster_alias`
@@ -234,6 +252,18 @@ Requires processed h5ad + Allen metadata CSVs (`donor.csv`, `cell_metadata.csv`,
 4. AD support score vs donor age and sex (with pseudoreplication caveats)
 5. Pseudo-spatial plots using x/y coordinates from Allen cell metadata
 6. WHB taxonomy heatmap (cell type × supercluster)
+
+#### Notebook 06 — `06_seaad_disease_comparison.ipynb`
+
+Requires SEA-AD MTG h5ad under `data/processed/`. Uses same 6-gene **AD support score** as NB02/03.
+
+1. Load SEA-AD MTG (`backed="r"`) → subset to **Astrocyte** subclass (~70k nuclei)
+2. Compute AD support score on shared gene panel
+3. **Normal vs dementia** comparison (Mann–Whitney)
+4. Stratify by **Braak stage**, **ADNC**, and **APOE4 status**
+5. Correlate score with **Continuous Pseudo-progression Score**
+6. Classify Astrocyte_2-like vs Astrocyte-like cells (score threshold from NB04)
+7. UMAP of SEA-AD astrocytes by AD score and disease status
 
 ### 4. Conference reports
 
@@ -268,12 +298,14 @@ On Windows, if `quarto` is not on PATH:
 | Conda env + kernel | Done (`environment.yml`; includes scvi-tools, shap) |
 | WHB metadata + taxonomy | Downloaded under `data/processed/abc_atlas/` |
 | WHB non-neuron h5ad | Used in notebook 01 (local; gitignored) |
+| SEA-AD MTG h5ad | Used in notebook 06 (local; gitignored) |
 | Notebook 01 | Load → UMAP → Leiden → Astrocyte_2 discovery → enrichment → save h5ad |
 | Notebook 02 | Neuroprotective score, regional DE, Mann–Whitney; markers exported |
 | Notebook 03 | AD support score; regional + donor stratification |
 | Notebook 04 | Donor-aware scVI + MLP classifier; SHAP interpretability; model saved |
 | Notebook 05 | WHB taxonomy mapping; donor age/sex join; pseudo-spatial plots |
-| Download script | `scripts/download_whb_data.py` |
+| Notebook 06 | SEA-AD disease comparison; Braak/ADNC/APOE4 stratification |
+| Download scripts | `download_whb_data.py`, `download_sea_ad_mtg.py` (S3 URL probe) |
 | Quarto reports | NB01 + NB02 conference summaries (`.qmd`) |
 | Results export | `results/astrocyte2_vs_astrocyte_markers.csv` |
 | Reusable `src/` module | Not started |
@@ -283,15 +315,16 @@ On Windows, if `quarto` is not on PATH:
 - **Astrocyte_2** (*n* ≈ 4,081 / 50,000) is a forebrain-enriched astrocyte state: ~52% cerebral cortex, ~28% hippocampus, absent from cerebellum and spinal cord.
 - Top markers include *SLC1A2*, *SPARCL1*, *SLC4A4*, *AQP4*, *APOE*, and *CLU* — consistent with synaptic-support astrocyte biology.
 - **Neuroprotective Support Score:** ~99.9% of Astrocyte_2 nuclei in Q4 vs ~2.9% of canonical astrocytes (NB02).
-- **AD support score:** ~96% of Astrocyte_2 in Q4; regional gradient (cortex/hippocampus > hypothalamus) replicates across donors (NB03).
-- **ML classifier (NB04):** Donor-held-out MLP on scVI latent space achieves macro AUROC ≈ 0.999; SHAP top latent dims correlate with *SLC1A2*, *SPARCL1*, *SLC4A4* — independently rediscovering NB01–02 marker genes.
-- **Official taxonomy (NB05):** Astrocyte_2 and canonical Astrocyte both map to Allen **Astrocyte** supercluster (~40% subcluster coverage in 50k subsample); subsample spans only **4 donors** (ages 28–60) — age/sex effects are underpowered at donor level.
+- **AD support score (WHB):** ~96% of Astrocyte_2 in Q4; regional gradient replicates across donors (NB03).
+- **ML classifier (NB04):** Donor-held-out MLP on scVI latent space achieves macro AUROC ≈ 0.999; SHAP top latent dims correlate with *SLC1A2*, *SPARCL1*, *SLC4A4*.
+- **Official taxonomy (NB05):** Astrocyte_2 maps to Allen **Astrocyte** supercluster; 50k subsample spans only 4 donors — age/sex inference underpowered.
+- **SEA-AD disease (NB06):** AD support score lower in dementia (median 0.197 vs 0.300 normal; Mann–Whitney *p* ≈ 4×10⁻¹⁷⁷, *r* ≈ −0.126); declines with Braak stage and High ADNC; APOE4 carriers score lower; Astrocyte_2-like fraction ↓ ~22% in dementia.
 
 ## Planned Next Steps
 
-- Quarto conference reports for Notebooks 03–05
-- Donor-level mixed models on full WHB atlas (n ≥ 20 donors) for valid age/sex inference
+- Quarto conference reports for Notebooks 03–06
+- Donor-level mixed models (SEA-AD: 84 donors; WHB full atlas) for valid statistical inference
+- Cross-dataset scVI retraining on shared gene space (replace threshold-based Astrocyte_2-like labeling)
 - MapMyCells formal reference mapping for Astrocyte_2 validation
-- Integrate external AD snRNA-seq cohort (e.g., SEA-AD) for disease comparison
-- MERFISH / spatial validation of cortex/hippocampus Astrocyte_2 enrichment
+- Hippocampal SEA-AD or MERFISH spatial validation (MTG-only limitation in NB06)
 - Blog post, poster, whitepaper, conference submission
