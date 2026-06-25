@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { Brain, BookOpen, Activity, Upload, GitBranch, Info, Layers, Heart } from "lucide-react";
 import ApiBanner from "./ApiBanner";
+import Footer from "./Footer";
 
 const links = [
   { to: "/", label: "Home", icon: Brain, end: true },
@@ -15,7 +16,7 @@ const links = [
 
 export default function Layout({ children }) {
   return (
-    <div className="min-h-screen bg-neuro-bg">
+    <div className="flex min-h-screen flex-col bg-neuro-bg">
       <header className="border-b border-slate-800 bg-neuro-card/80 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
           <div>
@@ -48,7 +49,8 @@ export default function Layout({ children }) {
         </div>
       </header>
       <ApiBanner />
-      <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
+      <main className="mx-auto flex-1 max-w-7xl px-4 py-8">{children}</main>
+      <Footer />
     </div>
   );
 }

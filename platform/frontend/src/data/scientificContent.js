@@ -243,3 +243,14 @@ export const METHODS_TABLE = [
   { step: "LR analysis", method: "LIANA rank aggregate", tool: "liana 1.7.3", param: "resource=consensus, expr_prop=0.1" },
   { step: "Disease validation", method: "Mann-Whitney U", tool: "scipy", param: "SEA-AD MTG, 84 donors" },
 ];
+
+/** Footer / external resources — update URLs when paper or poster are published */
+export const SITE_LINKS = {
+  github: "https://github.com/dtquocbao/neuro-ai-brain-cell-atlas",
+  paper:
+    "https://github.com/dtquocbao/neuro-ai-brain-cell-atlas/blob/main/reports/brain_cell_atlas_report.qmd",
+  poster: "https://github.com/dtquocbao/neuro-ai-brain-cell-atlas/tree/main/reports",
+};
+
+export const RESEARCH_DISCLAIMER =
+  "Research use only. Not intended for clinical diagnosis, prognosis, treatment, or medical decision-making.";

@@ -1,4 +1,6 @@
 import { Routes, Route } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
+import GoogleAnalytics from "./components/GoogleAnalytics";
 import Layout from "./components/Layout";
 import Landing from "./pages/Landing";
 import Findings from "./pages/Findings";
@@ -22,6 +24,8 @@ export default function App() {
         <Route path="/lr" element={<LR />} />
         <Route path="/about" element={<About />} />
       </Routes>
+      <GoogleAnalytics />
+      <Analytics />
     </Layout>
   );
 }
