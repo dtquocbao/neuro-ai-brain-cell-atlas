@@ -14,7 +14,15 @@ import scanpy as sc
 from pipelines.scorer import _parse_expression_table
 
 APP_ROOT = Path(__file__).resolve().parents[1]
-REPO_ROOT = APP_ROOT.parents[1]
+
+
+def _optional_repo_models_root() -> Path | None:
+    """Monorepo layout: repo/models/scvi_nb04 (local dev only; not present in Docker /app)."""
+    if len(APP_ROOT.parents) < 2:
+        return None
+    candidate = APP_ROOT.parents[1] / "models" / "scvi_nb04"
+    return candidate if candidate.exists() else None
+
 
 _clf = None
 _label_encoder = None
@@ -22,11 +30,14 @@ _model_dirs: list[Path] | None = None
 
 
 def _candidate_model_dirs() -> list[Path]:
-    return [
+    dirs = [
         APP_ROOT / "models" / "scvi_nb04",
         APP_ROOT / "models",
-        REPO_ROOT / "models" / "scvi_nb04",
     ]
+    repo_models = _optional_repo_models_root()
+    if repo_models is not None:
+        dirs.append(repo_models)
+    return dirs
 
 
 def _find_model_dir() -> Path | None:
@@ -39,7 +50,11 @@ def _find_model_dir() -> Path | None:
 
 
 def _find_pkl(name: str) -> Path | None:
-    for base in [APP_ROOT / "models", APP_ROOT / "models" / "scvi_nb04", REPO_ROOT / "models" / "scvi_nb04"]:
+    bases = [APP_ROOT / "models", APP_ROOT / "models" / "scvi_nb04"]
+    repo_models = _optional_repo_models_root()
+    if repo_models is not None:
+        bases.append(repo_models)
+    for base in bases:
         path = base / name
         if path.exists():
             return path
