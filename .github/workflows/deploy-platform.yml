@@ -39,8 +39,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install huggingface_hub
-        run: pip install --upgrade huggingface_hub
+      - name: Install Hugging Face CLI
+        run: pip install --upgrade "huggingface_hub>=0.26"
 
       - name: Stage backend files
         run: |
@@ -56,7 +56,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
         run: |
-          huggingface-cli upload "$HF_SPACE_ID" /tmp/hf-space \
+          hf upload "$HF_SPACE_ID" /tmp/hf-space \
             --repo-type space \
             --commit-message "Deploy backend ${GITHUB_SHA::7} from GitHub Actions"
 
